@@ -1,0 +1,4 @@
+(pick robot1 hexnut1 table)
+(place_on_peg_hex robot1 hexnut1 peg1)
+(pick robot1 squarenut1 table)
+(place_on_peg_square robot1 squarenut1 peg2)
