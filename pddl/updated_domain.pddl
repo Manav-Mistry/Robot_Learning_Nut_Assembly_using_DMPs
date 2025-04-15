@@ -7,7 +7,7 @@
   ;; Predicates
   (:predicates
     ;; State of the world
-    (at ?n - nut ?loc - location)            ;; nut is at a location (e.g., table or peg)
+    (at ?n - nut ?loc - location)            ;; nut is at a location table or peg)
     (grasped ?r - robot ?n - nut)            ;; robot is grasping the nut
     (on_peg ?n - nut ?p - peg)               ;; nut is on a peg
     (assembled ?n - nut)                     ;; nut has been successfully assembled
@@ -18,12 +18,12 @@
     (is_hex ?n - nut)                        ;; nut is hex type
     (is_square ?n - nut)                     ;; nut is square type
     (is_circular ?p - peg)                   ;; peg is circular type
-    (is_square_peg ?p - peg)                 ;; peg is square type
+    (is_square_peg ?p - peg)                 ;; peg is square 
   )
 
   ;; Actions
 
-  ;; Pick action - robot picks a nut from any location
+  ;; Pick action
   (:action pick
     :parameters (?r - robot ?n - nut ?loc - location)
     :precondition (and (at ?n ?loc) (handempty ?r))

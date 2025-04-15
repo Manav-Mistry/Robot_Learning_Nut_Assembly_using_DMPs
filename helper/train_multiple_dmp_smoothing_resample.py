@@ -2,8 +2,29 @@ import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 # from scipy.interpolate import interp1d  # NEW
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import UnivariateSpline, splrep
 from movement_primitives.dmp import DMP
+from mpl_toolkits.mplot3d import Axes3D
+from scipy.spatial.transform import Rotation as R, Slerp
+
+def plot_spline_and_DMP_generated_trajectories_3D(all_spline_trajectories, all_generated_trajectories):
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(111, projection='3d')
+
+    count = 0
+    for (T, ee_pos), (T_gen, gen_pos) in zip(all_spline_trajectories, all_generated_trajectories):
+        ax.plot(ee_pos[:, 0], ee_pos[:, 1], ee_pos[:, 2], linestyle="dashed", alpha=0.7, label=f"Original Demo {count}")
+        ax.plot(gen_pos[:, 0], gen_pos[:, 1], gen_pos[:, 2], label=f"DMP Generated {count}")
+        count += 1
+
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+    ax.set_title("DMP Learning for Multiple Demonstrations (3D Trajectory)")
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
+
 
 def view_original_and_spline_trajectory(original_time, new_time, ee_pos, ee_pos_resampled):
     for dim in range(3):
@@ -35,11 +56,13 @@ def plot_spline_and_DMP_generated_trajectories(all_spline_trajectories, all_gene
     plt.show()
 
 
-def generate_DMP_trajectories(hdf5_files, fixed_timestep_count, EE_POS_IDX):
+def generate_DMP_trajectories(hdf5_files, fixed_timestep_count, EE_POS_IDX, EE_ORI_IDX):
     all_dmp_models = []  
     all_generated_trajectories = []  
-    all_spline_trajectories = []  
-
+    all_spline_trajectories = [] 
+    all_ee_ori = []
+    all_original_time = []
+    
     for file_path in hdf5_files:
         with h5py.File(file_path, "r") as f:
             demo_keys = list(f["data"].keys())
@@ -61,7 +84,18 @@ def generate_DMP_trajectories(hdf5_files, fixed_timestep_count, EE_POS_IDX):
                         spline = UnivariateSpline(original_time, ee_pos[:, dim], s=1e-1)
                         ee_pos_resampled[:, dim] = spline(new_time)  # NEW
                         
-                    view_original_and_spline_trajectory(original_time, new_time, ee_pos, ee_pos_resampled)
+                    # Same way resampling Quat
+                    ee_ori = states[:, EE_ORI_IDX]
+                    ee_ori = np.array(ee_ori, dtype=np.float64)
+                    
+                    # NOTE
+                    # rotations = R.from_quat(ee_ori)  # [x, y, z, w]
+                    # slerp = Slerp(original_time, rotations)
+                    # resampled_rotations = slerp(new_time)
+                    # ee_ori_resampled = resampled_rotations.as_quat() 
+
+
+                    # view_original_and_spline_trajectory(original_time, new_time, ee_pos, ee_pos_resampled)
 
                     # DMP training on resampled data
                     dmp = DMP(
@@ -77,11 +111,17 @@ def generate_DMP_trajectories(hdf5_files, fixed_timestep_count, EE_POS_IDX):
                     dmp.imitate(new_time, ee_pos_resampled)
                     T_gen, generated_pos = dmp.open_loop()
 
+                    # NOTE
+                    # resampled_rotations = slerp(new_time)
+                    # ee_ori_resampled = resampled_rotations.as_quat() 
+
                     all_dmp_models.append(dmp)
                     all_generated_trajectories.append((T_gen, generated_pos))
                     all_spline_trajectories.append((new_time, ee_pos_resampled))  # NEW 
+                    all_ee_ori.append(ee_ori)
+                    all_original_time.append(original_time)
 
-    return all_dmp_models, all_generated_trajectories, all_spline_trajectories 
+    return all_dmp_models, all_generated_trajectories, all_spline_trajectories, all_ee_ori, all_original_time 
 
 
 def main():
@@ -93,9 +133,12 @@ def main():
     EE_POS_IDX = slice(14, 17) 
     fixed_timestep_count = 100  # resample
 
-    all_dmp_models, all_generated_trajectories, all_spline_trajectories = generate_DMP_trajectories(hdf5_files, fixed_timestep_count, EE_POS_IDX)
+    EE_ORI_IDX = slice(17, 21)
+
+    _, all_generated_trajectories, all_spline_trajectories, _, _ = generate_DMP_trajectories(hdf5_files, fixed_timestep_count, EE_POS_IDX, EE_ORI_IDX)
 
     plot_spline_and_DMP_generated_trajectories(all_spline_trajectories, all_generated_trajectories)
+    # plot_spline_and_DMP_generated_trajectories_3D(all_spline_trajectories, all_generated_trajectories)
 
 
 if __name__ == "__main__":
