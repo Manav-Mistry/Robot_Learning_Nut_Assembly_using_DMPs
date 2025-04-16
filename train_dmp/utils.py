@@ -92,6 +92,7 @@ def print_dmp_and_original_traj(dmp_traj, original_traj):
 
 def generate_DMP_trajectories(hdf5_files, fixed_timestep_count):
     all_dmp_models = []  
+    all_original_demo_eff_pos = []
     all_spline_trajectories = [] 
     all_generated_trajectories = []  
     
@@ -105,7 +106,7 @@ def generate_DMP_trajectories(hdf5_files, fixed_timestep_count):
         # Interpolate each dimension (X, Y, Z)
         ee_pos_resampled = np.zeros((fixed_timestep_count, 3))  
         for dim in range(3):
-            spline = UnivariateSpline(original_time, ee_pos[:, dim], s=1e-1)
+            spline = UnivariateSpline(original_time, ee_pos[:, dim], s=0.01)
             ee_pos_resampled[:, dim] = spline(new_time) 
 
         # view_original_and_spline_trajectory(original_time, new_time, ee_pos, ee_pos_resampled)
@@ -115,17 +116,30 @@ def generate_DMP_trajectories(hdf5_files, fixed_timestep_count):
             n_dims=3,
             execution_time=1.0,
             dt=1.0 / fixed_timestep_count,  # NEW: match resampled rate
-            n_weights_per_dim=20,
+            n_weights_per_dim=100,
             int_dt=0.0001,
             alpha_y=np.array([25.0, 25.0, 25.0]),
             beta_y=np.array([6.25, 6.25, 6.25]),
         )
+
+        # NOTE: Test with another DMP initialization
+        # dmp = CartesianDMP(
+        #     execution_time=1.0,
+        #     dt=1.0 / fixed_timestep_count,
+        #     n_weights_per_dim=200,
+        #     int_dt=0.0005,
+        #     smooth_scaling=True,
+        #     alpha_y=[50.0] * 6,
+        #     beta_y=[12.5] * 6
+        # )
 
         dmp.imitate(new_time, ee_pos_resampled)
         T_gen, generated_pos = dmp.open_loop()
 
         all_dmp_models.append(dmp)
         all_generated_trajectories.append((T_gen, generated_pos))
-        all_spline_trajectories.append((new_time, ee_pos_resampled)) 
+        all_spline_trajectories.append((new_time, ee_pos_resampled))
+        all_original_demo_eff_pos.append(ee_pos)
+        # view_original_and_spline_trajectory(original_time, new_time, ee_pos, ee_pos_resampled) 
 
-    return all_dmp_models, all_generated_trajectories, all_spline_trajectories
+    return all_dmp_models, all_generated_trajectories, all_spline_trajectories, all_original_demo_eff_pos
