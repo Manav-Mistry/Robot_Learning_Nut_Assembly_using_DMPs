@@ -6,7 +6,7 @@ output_file = r"C:\Users\Admin\robosuite_demos\splitted_traj_for_revised_demo\de
 
 # Time step range (inclusive)
 start_t = 534
-end_t = 1100
+end_t = 1056
 
 with h5py.File(input_file, 'r') as f_in, h5py.File(output_file, 'w') as f_out:
     # Create top-level group and copy attributes

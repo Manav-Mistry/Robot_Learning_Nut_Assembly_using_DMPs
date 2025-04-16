@@ -43,6 +43,7 @@ def move_nuts_with_random_y_safe(env, peg1_body="peg1", peg2_body="peg2", arm="r
 def create_env():
     # 1. Setup Environment
     controller_config = load_composite_controller_config(robot="Kinova3")
+    # controller_config["body_parts"]["right"]["input_type"] = "absolute"
 
     env = suite.make(
         env_name="NutAssembly",
@@ -53,7 +54,7 @@ def create_env():
         render_camera="agentview",
         use_camera_obs=False,
         reward_shaping=True,
-        control_freq=20,
+        control_freq=1,
     )
 
     env = VisualizationWrapper(env)
@@ -75,6 +76,10 @@ def get_goal_pos(env, object_name):
     goal_pos = env.sim.data.site_xpos[env.sim.model.site_name2id(object_name)].copy()
     return goal_pos
 
+def get_peg_pos(env, object_name):
+    goal_pos = env.sim.data.get_body_xpos(object_name).copy()
+    return goal_pos
+
 
 def run_pick_dmp(env, dmp_model, spline_traj, goal_pos):
     # Set goal in DMP model
@@ -82,29 +87,122 @@ def run_pick_dmp(env, dmp_model, spline_traj, goal_pos):
 
     # Generate new trajectory using the trained DMP model
     T_gen, dmp_trajectory = dmp_model.open_loop()
-
+    print("Last point of DMP trajectory: ", dmp_trajectory[-1])
+    print("Actual Goal pos: ", goal_pos)
     all_generated_traj = [(T_gen, dmp_trajectory)]
     plot_spline_and_DMP_generated_trajectories_3D([spline_traj], all_generated_traj)
 
     # Playback in simulation
     grasp = np.array([-1], dtype=np.float32)  # Gripper open
     for pos in dmp_trajectory:
-        current = env.sim.data.site_xpos[env.robots[0].eef_site_id["right"]].copy()
+        current = get_eff_pos(env)
         dpos = pos - current
         drot = np.zeros(3)
         action = np.concatenate([dpos, drot, grasp])
 
         env.step(action)
         env.render()
-        time.sleep(0.05)
+        # time.sleep(0.005)
 
     # Final adjustment if needed
-    for _ in range(100):
-        current = env.sim.data.site_xpos[env.robots[0].eef_site_id["right"]].copy()
+    for i in range(30):
+        current = get_eff_pos(env)
         dpos = goal_pos - current
-        if np.linalg.norm(dpos) < 0.02:
+        if np.linalg.norm(dpos) < 0.002:
+            grasp = np.array([1], dtype=np.float32)
+            env.step(np.concatenate([dpos, np.zeros(3), grasp]))
+            env.render()
+            # time.sleep(0.005)
+            print("EE position: ", current)
+            print("Goal Pos: ", goal_pos)
+            print(i, ": breakkkk")
             break
-        env.step(np.concatenate([dpos, np.zeros(3), grasp]))
-        env.render()
+        else:
+            env.step(np.concatenate([dpos, np.zeros(3), grasp]))
+            env.render()
+            time.sleep(0.005)
+    print("Last Pos of EE: ", get_eff_pos(env))
+            
 
-    env.close()
+# def run_place_dmp(env, dmp_model, spline_traj, goal_pos):
+#     # Set goal in DMP model
+#     dmp_model.goal_y = goal_pos
+
+#     # Generate new trajectory using the trained DMP model
+#     T_gen, dmp_trajectory = dmp_model.open_loop()
+
+#     all_generated_traj = [(T_gen, dmp_trajectory)]
+#     plot_spline_and_DMP_generated_trajectories_3D([spline_traj], all_generated_traj)
+
+#     # Playback in simulation
+#     grasp = np.array([1], dtype=np.float32)  # Gripper closed
+#     for pos in dmp_trajectory:
+#         current = get_eff_pos(env)
+#         dpos = pos - current
+#         drot = np.zeros(3)
+#         action = np.concatenate([dpos, drot, grasp])
+
+#         env.step(action)
+#         env.render()
+#         time.sleep(0.005)
+
+#     # Final adjustment if needed
+#     for i in range(30):
+#         current = get_eff_pos(env)
+#         dpos = goal_pos - current
+#         if np.linalg.norm(dpos) < 0.02:
+#             grasp = np.array([1], dtype=np.float32)
+#             env.step(np.concatenate([dpos, np.zeros(3), grasp]))
+#             env.render()
+#             time.sleep(0.005)
+#             print(i, ": breakkkk")
+#             break
+#         else:
+#             env.step(np.concatenate([dpos, np.zeros(3), grasp]))
+#             env.render()
+#             time.sleep(0.005)
+
+
+def run_place_dmp(env, dmp_model, spline_traj, goal_pos):
+    # Set the goal in DMP model
+    dmp_model.goal_y = goal_pos
+
+    # Generate new trajectory
+    T_gen, dmp_trajectory = dmp_model.open_loop()
+
+    all_generated_traj = [(T_gen, dmp_trajectory)]
+    plot_spline_and_DMP_generated_trajectories_3D([spline_traj], all_generated_traj)
+
+    # Keeping gripper closed throughout place motion
+    grasp = np.array([1.0], dtype=np.float32)
+
+    for pos in dmp_trajectory:
+        current = get_eff_pos(env)
+        dpos = pos - current
+        drot = np.zeros(3)
+        action = np.concatenate([dpos, drot, grasp])
+        env.step(action)
+        env.render()
+        time.sleep(0.005)
+
+    # Release the nut near goal
+    for i in range(3):
+        current = get_eff_pos(env)
+        dpos = goal_pos - current
+        # if np.linalg.norm(dpos) < 0.02:
+        #     grasp = np.array([-1], dtype=np.float32)  # open gripper
+        #     env.step(np.concatenate([dpos, np.zeros(3), grasp]))
+        #     env.render()
+        #     time.sleep(0.005)
+        #     print(i, ": released!")
+        #     break
+        # else:
+        #     env.step(np.concatenate([dpos, np.zeros(3), grasp]))
+        #     env.render()
+        #     time.sleep(0.005)
+        if i == 2:
+            grasp = np.array([-1], dtype=np.float32)  # open gripper
+            env.step(np.concatenate([dpos, np.zeros(3), grasp]))
+            env.render()
+            time.sleep(0.005)
+            print(i, ": released!")

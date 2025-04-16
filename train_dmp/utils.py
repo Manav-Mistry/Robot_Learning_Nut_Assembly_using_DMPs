@@ -96,7 +96,8 @@ def generate_DMP_trajectories(hdf5_files, fixed_timestep_count):
     all_dmp_models = []  
     all_original_demo_eff_pos = []
     all_spline_trajectories = [] 
-    all_generated_trajectories = []  
+    all_generated_trajectories = []
+    all_trajectory_types = []  
     
     for file_info in hdf5_files:
         ee_pos = return_eef_pos_from_states(file_info["path"])
@@ -134,6 +135,7 @@ def generate_DMP_trajectories(hdf5_files, fixed_timestep_count):
         all_generated_trajectories.append((T_gen, generated_pos))
         all_spline_trajectories.append((new_time, ee_pos_resampled))
         all_original_demo_eff_pos.append(ee_pos)
+        all_trajectory_types.append(file_info["type"])
         # view_original_and_spline_trajectory(original_time, new_time, ee_pos, ee_pos_resampled) 
 
-    return all_dmp_models, all_generated_trajectories, all_spline_trajectories, all_original_demo_eff_pos
+    return all_dmp_models, all_generated_trajectories, all_spline_trajectories, all_original_demo_eff_pos, all_trajectory_types
