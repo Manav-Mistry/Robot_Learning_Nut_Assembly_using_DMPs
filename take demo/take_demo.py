@@ -8,10 +8,11 @@ import robosuite as suite
 from robosuite import load_composite_controller_config
 from robosuite.wrappers import VisualizationWrapper
 from robosuite.devices import Keyboard
+# from scipy.spatial.transform import Rotation as R
+from utils import move_nuts_with_random_y_safe, rotate_nuts_in_env
 
-# ----------------------------
-# Utility: Check for Key Presses
-# ----------------------------
+np.random.seed(42)
+
 def check_pygame_keys():
     marked, quit_signal = False, False
     for event in pygame.event.get():
@@ -44,8 +45,18 @@ env = suite.make(
     control_freq=20,
 )
 env = VisualizationWrapper(env)
+
+
+
 controller = Keyboard(env=env)
 controller.start_control()
+
+env.reset()
+
+
+rotate_nuts_in_env(env, angle_degrees=180, axis="z")
+# move_nuts_between_eef_and_pegs(env)
+move_nuts_with_random_y_safe(env)
 
 site_id = env.sim.model.site_name2id("gripper0_right_grip_site")
 
@@ -53,7 +64,7 @@ site_id = env.sim.model.site_name2id("gripper0_right_grip_site")
 # 2. HDF5 Setup
 # ----------------------------
 timestamp = time.strftime("%Y%m%d_%H%M%S")
-hdf5_path = f"new_demo_keyboard_{timestamp}.hdf5"
+hdf5_path = f"new_full_demo_keyboard_{timestamp}.hdf5"
 f = h5py.File(hdf5_path, "w")
 data_group = f.create_group("data")
 data_group.attrs["date"] = time.strftime("%Y-%m-%d")
@@ -71,7 +82,7 @@ states = []
 actions = []
 marked_steps = []
 
-obs = env.reset()
+# obs = env.reset()
 step = 0
 
 while True:

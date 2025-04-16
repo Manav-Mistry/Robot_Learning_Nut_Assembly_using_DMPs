@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import UnivariateSpline, splrep
 from movement_primitives.dmp import DMP
+from scipy.spatial.transform import Rotation as R
 
 def return_eef_pos_from_states(hdf5_path):
     with h5py.File(hdf5_path, "r") as f:
@@ -122,7 +123,7 @@ def generate_DMP_trajectories(hdf5_files, fixed_timestep_count):
             beta_y=np.array([6.25, 6.25, 6.25]),
         )
 
-        # NOTE: Test with another DMP initialization
+        # Test with another DMP initialization
         # dmp = CartesianDMP(
         #     execution_time=1.0,
         #     dt=1.0 / fixed_timestep_count,
