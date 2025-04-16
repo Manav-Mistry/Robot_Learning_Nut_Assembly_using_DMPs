@@ -5,6 +5,7 @@ from scipy.interpolate import UnivariateSpline, splrep
 from movement_primitives.dmp import DMP
 from scipy.spatial.transform import Rotation as R
 
+
 def return_eef_pos_from_states(hdf5_path):
     with h5py.File(hdf5_path, "r") as f:
         # List available episodes
@@ -97,17 +98,20 @@ def generate_DMP_trajectories(hdf5_files, fixed_timestep_count):
     all_spline_trajectories = [] 
     all_generated_trajectories = []  
     
-    for file_path in hdf5_files:
-        ee_pos = return_eef_pos_from_states(file_path)
+    for file_info in hdf5_files:
+        ee_pos = return_eef_pos_from_states(file_info["path"])
 
         original_timesteps = ee_pos.shape[0]
         original_time = np.linspace(0, 1, original_timesteps)  # Normalize time
         new_time = np.linspace(0, 1, fixed_timestep_count)  # Resample target
 
         # Interpolate each dimension (X, Y, Z)
-        ee_pos_resampled = np.zeros((fixed_timestep_count, 3))  
+        ee_pos_resampled = np.zeros((fixed_timestep_count, 3))
+
+        spline_value = 0.01 if file_info["type"] == "pick" else 0.1
+    
         for dim in range(3):
-            spline = UnivariateSpline(original_time, ee_pos[:, dim], s=0.01)
+            spline = UnivariateSpline(original_time, ee_pos[:, dim], s=spline_value)
             ee_pos_resampled[:, dim] = spline(new_time) 
 
         # view_original_and_spline_trajectory(original_time, new_time, ee_pos, ee_pos_resampled)
@@ -122,17 +126,6 @@ def generate_DMP_trajectories(hdf5_files, fixed_timestep_count):
             alpha_y=np.array([25.0, 25.0, 25.0]),
             beta_y=np.array([6.25, 6.25, 6.25]),
         )
-
-        # Test with another DMP initialization
-        # dmp = CartesianDMP(
-        #     execution_time=1.0,
-        #     dt=1.0 / fixed_timestep_count,
-        #     n_weights_per_dim=200,
-        #     int_dt=0.0005,
-        #     smooth_scaling=True,
-        #     alpha_y=[50.0] * 6,
-        #     beta_y=[12.5] * 6
-        # )
 
         dmp.imitate(new_time, ee_pos_resampled)
         T_gen, generated_pos = dmp.open_loop()

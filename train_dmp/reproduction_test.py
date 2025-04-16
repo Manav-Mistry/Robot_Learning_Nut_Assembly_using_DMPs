@@ -89,7 +89,7 @@ def main():
     env = create_env()
 
     # 2. Load DMP
-    hdf5_files = [r"C:\Users\Admin\robosuite_demos\friend\demo.hdf5"]
+    hdf5_files = [r"C:\Users\Admin\robosuite_demos\new_full_demo\demo.hdf5"]
     fixed_timestep_count = 100
 
 
