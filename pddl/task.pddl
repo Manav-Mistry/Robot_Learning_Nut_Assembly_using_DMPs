@@ -1,18 +1,13 @@
-(define (problem nut-assembly-problem)
+(define (problem nut-assembly)
   (:domain NUT-ASSEMBLY)
 
   (:objects
-    ;; Objects by type
     robot1 - robot
-    hexnut1 squarenut1 - nut
+    hexnut squarenut - nut
     peg1 peg2 - peg
-    table - location
   )
 
   (:init
-    ;; Nut initial positions
-    (at hexnut1 table)
-    (at squarenut1 table)
 
     ;; Pegs are free
     (free peg1)
@@ -22,18 +17,18 @@
     (handempty robot1)
 
     ;; Nut types
-    (is_hex hexnut1)
-    (is_square squarenut1)
+    (is_hex hexnut)
+    (is_square squarenut)
 
     ;; Peg types
-    (is_circular peg1)
-    (is_square_peg peg2)
+    (is_square_peg peg1)
+    (is_circular peg2)
   )
 
   (:goal
     (and
-      (assembled hexnut1)
-      (assembled squarenut1)
+      (assembled hexnut)
+      (assembled squarenut)
     )
   )
 )

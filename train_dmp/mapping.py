@@ -1,96 +1,89 @@
 import numpy as np
-from robosuite import load_part_controller_config, load_composite_controller_config
-import robosuite as suite
-from scipy.spatial.transform import Rotation as R, Slerp
-# from robosuite.controllers.parts.arm.osc import Controller
+from utils import generate_DMP_trajectories
+from reproduce_helper import *
+
+np.random.seed(89)
+
+def get_pick_and_place_dmp(all_dmp_models, all_traj_types):
+    
+    for (dmp_model, traj_type) in zip(all_dmp_models, all_traj_types):
+        if traj_type == "pick":
+            dmp_pick = dmp_model
+        if traj_type == "place":
+            dmp_place = dmp_model
+
+    return (dmp_pick, dmp_place)
 
 
-CONTROLLER_PATH = r"C:\Users\Admin\anaconda3\envs\robosuite\Lib\site-packages\robosuite\controllers\config\robots\default_kinova3.json"
+def get_original_traj_for_pick_and_place(all_original_demo_eff_pos, all_traj_types):
 
-# Load Robosuite environment
-# controller_config = load_part_controller_config(default_controller="OSC_POSITION")
-controller_config = load_composite_controller_config(robot="Kinova3")
-# controller_config = Controller()
+    for (org_ee_traj, traj_type) in zip(all_original_demo_eff_pos, all_traj_types):
+        if traj_type == "pick":
+            original_pick_traj = org_ee_traj
+        if traj_type == "place":
+            original_place_traj = org_ee_traj
 
-env = suite.make(
-        env_name="NutAssembly",
-        robots="Kinova3",
-        controller_configs=controller_config,
-        has_renderer=True,
-        has_offscreen_renderer=False,
-        render_camera="frontview",
-        use_camera_obs=False,
-        control_freq=5, 
-    )
+    return (original_pick_traj, original_place_traj)
 
-# NOTE : env.action(?)
-def execute_trajectory(trajectory, ee_ori_resampled):
-    for ee_pos, ee_ori in zip(trajectory, ee_ori_resampled):
-        # 3D pos + 4D quaternion
-        # desired_quat = np.array([0, 1, 0, 0])  # Placeholder
-        action = np.concatenate([ee_pos, ee_ori])
+def get_spline_traj_for_pick_and_place(all_spline_trajectory, all_traj_types):
 
-        obs, reward, done, info = env.step(action)
-        env.render()
+    for (spline_traj, traj_type) in zip(all_spline_trajectory, all_traj_types):
+        if traj_type == "pick":
+            spline_pick_traj = spline_traj
+        if traj_type == "place":
+            spline_place_traj = spline_traj
 
-# Mapping
-def execute_plan_with_dmps(plan, dmp_models, all_ee_ori, all_original_time):
-    action_to_dmp = {
-        "assemble_hex_nut robot1 hexnut1 peg1 table": dmp_models[0],
-        "assemble_square_nut robot1 squarenut1 peg2 table": dmp_models[1]
-    }
-
-    ee_ori_to_dmp = {
-        "assemble_hex_nut robot1 hexnut1 peg1 table": all_ee_ori[0],
-        "assemble_square_nut robot1 squarenut1 peg2 table": all_ee_ori[1]
-    }
-
-    original_time_to_dmp = {
-        "assemble_hex_nut robot1 hexnut1 peg1 table": all_original_time[0],
-        "assemble_square_nut robot1 squarenut1 peg2 table": all_original_time[1]
-    }
-
-    for action_str in plan:
-        action = action_str.strip("()")
-        dmp = action_to_dmp.get(action)
-        ee_ori = ee_ori_to_dmp.get(action)
-        original_time = original_time_to_dmp.get(action)
-
-        if dmp is None:
-            print(f"No DMP found for: {action}")
-            continue
-        T_gen, ee_trajectory = dmp.open_loop()
-
-        #NOTE resample ee_ori
-        rotations = R.from_quat(ee_ori)  # [x, y, z, w]
-        slerp = Slerp(original_time, rotations)
-        resampled_rotations = slerp(T_gen)
-        ee_ori_resampled = resampled_rotations.as_quat() 
-
-
-        execute_trajectory(ee_trajectory, ee_ori_resampled)
+    return (spline_pick_traj, spline_place_traj)
 
 
 def main():
-    from train_multiple_dmp_smoothing_resample import generate_DMP_trajectories
+    # 1. Setup Environment
+    env = create_env()
 
+    # 2. Load your DMP-generated trajectories (from original demos)
     hdf5_files = [
-        r"C:\\Users\\Admin\\robosuite_demos\\1741904602_8723783\\demo.hdf5",
-        r"C:\\Users\\Admin\\robosuite_demos\\1741724444_7722592\\demo.hdf5",
-    ]
-    EE_POS_IDX = slice(14, 17)
-
-    EE_ORI_IDX = slice(17, 21)
-
-    fixed_timestep_count = 100
-    dmp_models, _, _, all_ee_ori, all_original_time = generate_DMP_trajectories(hdf5_files, fixed_timestep_count, EE_POS_IDX, EE_ORI_IDX)
-
-    plan = [
-        "(assemble_hex_nut robot1 hexnut1 peg1 table)",
-        "(assemble_square_nut robot1 squarenut1 peg2 table)"
+        {"path": r"C:\\Users\\Admin\\robosuite_demos\\splitted_traj_for_revised_demo\\demo_split_pick.hdf5", "type": "pick"},
+        {"path": r"C:\\Users\\Admin\\robosuite_demos\\splitted_traj_for_revised_demo\\demo_split_place.hdf5", "type": "place"},
     ]
 
-    execute_plan_with_dmps(plan, dmp_models, all_ee_ori, all_original_time)
+    fixed_timestep_count = 200
+
+    all_dmp_models, _, all_spline_trajectory, all_original_demo_eff_pos, all_trajectory_types = generate_DMP_trajectories(
+        hdf5_files, fixed_timestep_count
+    )
+
+    dmp_pick, dmp_place = get_pick_and_place_dmp(all_dmp_models, all_trajectory_types)
+    original_pick_traj, original_place_traj = get_original_traj_for_pick_and_place(all_original_demo_eff_pos,all_trajectory_types)
+    spline_pick_traj, spline_place_traj = get_spline_traj_for_pick_and_place(all_spline_trajectory, all_trajectory_types)
+
+    # 3. Planner Actions
+    planner_actions = [
+        {'action': 'pick', 'robot': 'robot1', 'nut': 'squarenut', 'peg': None},
+        {'action': 'place_on_peg_square', 'robot': 'robot1', 'nut': 'squarenut', 'peg': 'peg1'},
+        {'action': 'pick', 'robot': 'robot1', 'nut': 'hexnut', 'peg': None},
+        {'action': 'place_on_peg_hex', 'robot': 'robot1', 'nut': 'hexnut', 'peg': 'peg2'}
+    ]
+
+    for step in planner_actions:
+        act_type = step['action'].split('_')[0]  # pick or place
+        nut = step['nut']
+        peg = step['peg'] if act_type == 'place' else None
+
+        
+        if act_type == "pick":
+            object_name = "SquareNut_handle_site" if nut == "squarenut" else "RoundNut_handle_site"
+            goal_pos = get_goal_pos(env, object_name)
+            (x, y, z) = original_pick_traj[-1] # ee pos at last time step in pick demonstration
+            goal_pos[2] = z
+            run_pick_dmp(env, dmp_pick, spline_pick_traj, goal_pos)
+
+        elif act_type == "place":
+            peg_name = peg
+            goal_pos = get_peg_pos(env, peg_name)
+            (x, y, z) = original_place_traj[-1]
+            goal_pos[2] = z + 0.015
+            run_place_dmp(env, dmp_place, spline_place_traj, goal_pos)
+
 
 if __name__ == "__main__":
     main()

@@ -2,33 +2,29 @@
   (:requirements :strips :typing)
 
   ;; Types
-  (:types nut peg robot location)
+  (:types nut peg robot)
 
   ;; Predicates
   (:predicates
-    ;; State of the world
-    (at ?n - nut ?loc - location)            ;; nut is at a location table or peg)
-    (grasped ?r - robot ?n - nut)            ;; robot is grasping the nut
-    (on_peg ?n - nut ?p - peg)               ;; nut is on a peg
-    (assembled ?n - nut)                     ;; nut has been successfully assembled
-    (free ?p - peg)                          ;; peg is available for use
-    (handempty ?r - robot)                   ;; robot is not holding anything
+    
+    (free ?p - peg)                          
+    (handempty ?r - robot)                               
+    (grasped ?r - robot ?n - nut)            
+    (on_peg ?n - nut ?p - peg)               
+    (assembled ?n - nut)                     
 
-    ;; Nut and peg types
-    (is_hex ?n - nut)                        ;; nut is hex type
-    (is_square ?n - nut)                     ;; nut is square type
-    (is_circular ?p - peg)                   ;; peg is circular type
-    (is_square_peg ?p - peg)                 ;; peg is square 
+    
+    (is_hex ?n - nut)                        
+    (is_square ?n - nut)                     
+    (is_circular ?p - peg)                  
+    (is_square_peg ?p - peg)                  
   )
-
-  ;; Actions
 
   ;; Pick action
   (:action pick
-    :parameters (?r - robot ?n - nut ?loc - location)
-    :precondition (and (at ?n ?loc) (handempty ?r))
+    :parameters (?r - robot ?n - nut)
+    :precondition (and (handempty ?r))
     :effect (and 
-      (not (at ?n ?loc))
       (grasped ?r ?n)
       (not (handempty ?r))
     )

@@ -124,45 +124,6 @@ def run_pick_dmp(env, dmp_model, spline_traj, goal_pos):
     print("Last Pos of EE: ", get_eff_pos(env))
             
 
-# def run_place_dmp(env, dmp_model, spline_traj, goal_pos):
-#     # Set goal in DMP model
-#     dmp_model.goal_y = goal_pos
-
-#     # Generate new trajectory using the trained DMP model
-#     T_gen, dmp_trajectory = dmp_model.open_loop()
-
-#     all_generated_traj = [(T_gen, dmp_trajectory)]
-#     plot_spline_and_DMP_generated_trajectories_3D([spline_traj], all_generated_traj)
-
-#     # Playback in simulation
-#     grasp = np.array([1], dtype=np.float32)  # Gripper closed
-#     for pos in dmp_trajectory:
-#         current = get_eff_pos(env)
-#         dpos = pos - current
-#         drot = np.zeros(3)
-#         action = np.concatenate([dpos, drot, grasp])
-
-#         env.step(action)
-#         env.render()
-#         time.sleep(0.005)
-
-#     # Final adjustment if needed
-#     for i in range(30):
-#         current = get_eff_pos(env)
-#         dpos = goal_pos - current
-#         if np.linalg.norm(dpos) < 0.02:
-#             grasp = np.array([1], dtype=np.float32)
-#             env.step(np.concatenate([dpos, np.zeros(3), grasp]))
-#             env.render()
-#             time.sleep(0.005)
-#             print(i, ": breakkkk")
-#             break
-#         else:
-#             env.step(np.concatenate([dpos, np.zeros(3), grasp]))
-#             env.render()
-#             time.sleep(0.005)
-
-
 def run_place_dmp(env, dmp_model, spline_traj, goal_pos):
     # Set the goal in DMP model
     dmp_model.goal_y = goal_pos

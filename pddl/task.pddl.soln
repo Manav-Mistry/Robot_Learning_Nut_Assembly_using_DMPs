@@ -1,2 +1,4 @@
-(assemble_hex_nut robot1 hexnut1 peg1 table)
-(assemble_square_nut robot1 squarenut1 peg2 table)
+(pick robot1 squarenut)
+(place_on_peg_square robot1 squarenut peg1)
+(pick robot1 hexnut)
+(place_on_peg_hex robot1 hexnut peg2)
