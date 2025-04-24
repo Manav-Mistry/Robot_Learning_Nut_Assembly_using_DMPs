@@ -1,4 +1,0 @@
-(pick robot1 squarenut)
-(place robot1 squarenut square)
-(pick robot1 hexnut)
-(place robot1 hexnut round)
