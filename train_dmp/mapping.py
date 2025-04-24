@@ -4,6 +4,7 @@ from reproduce_helper import *
 
 np.random.seed(89)
 
+
 def get_pick_and_place_dmp(all_dmp_models, all_traj_types):
     
     for (dmp_model, traj_type) in zip(all_dmp_models, all_traj_types):
@@ -43,7 +44,7 @@ def main():
     # 2. Load your DMP-generated trajectories (from original demos)
     hdf5_files = [
         {"path": r"C:\\Users\\Admin\\robosuite_demos\\splitted_traj_for_revised_demo\\demo_split_pick.hdf5", "type": "pick"},
-        {"path": r"C:\\Users\\Admin\\robosuite_demos\\splitted_trajectories\\demo_split_place.hdf5", "type": "place"},
+        {"path": r"C:\\Users\\Admin\\robosuite_demos\\splitted_traj_for_demo_from_top\\demo_split_place.hdf5", "type": "place"},
     ]
 
     fixed_timestep_count = 100
@@ -77,7 +78,9 @@ def main():
             goal_pos_place = get_peg_pos(env, peg_name)
             print("peg pos goal_pos_place: ", goal_pos_place)
             # (x, y, z) = goal_pos_place[-1]
-            goal_pos_place[2] +=  0.12
+            goal_pos_place[2] +=  0.05
+            print("print final goal: ",goal_pos_place[-1])
+            # rounded_dmp_goal = np.round(dmp_pos[-1], 2)
             print("updated goal_pos_place:", goal_pos_place)
             run_place_dmp(env, dmp_place, spline_place_traj, goal_pos_place)
 

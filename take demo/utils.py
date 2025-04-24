@@ -19,8 +19,8 @@ def move_nuts_with_random_y_safe(env, peg1_body="peg1", peg2_body="peg2", arm="r
     peg1_xy = env.sim.data.get_body_xpos(peg1_body)[:2]
     peg2_xy = env.sim.data.get_body_xpos(peg2_body)[:2]
 
-    square_x = (eef_xy[0] + peg1_xy[0]) / 2
-    round_x = (eef_xy[0] + peg2_xy[0]) / 2
+    square_x = (eef_xy[0] + peg1_xy[0]) / 10
+    round_x = (eef_xy[0] + peg2_xy[0]) / 3
 
     def safe_rand(a, b, m):
         low, high = sorted([a, b])

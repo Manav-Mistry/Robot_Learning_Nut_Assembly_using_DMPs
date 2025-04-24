@@ -2,7 +2,7 @@ import h5py
 import numpy as np
 
 # Load your demonstration file
-hdf5_path = r"C:\Users\Admin\robosuite_demos\new_full_demo_2\demo.hdf5"  # Change this to your actual file path
+hdf5_path = r"C:\Users\Admin\robosuite_demos\demo_going_from_top\demo.hdf5"  # Change this to your actual file path
 
 with h5py.File(hdf5_path, "r") as f:
     # List available episodes
@@ -39,7 +39,7 @@ with h5py.File(hdf5_path, "r") as f:
     print("First index from states vector: ", states[0])
 
     print("-------------- observe all end effector states --------------------")
-    for state in states:
-        print(state[-3:])
+    # for state in states:
+    #     print(state[-3:])
 
 

@@ -91,6 +91,26 @@ def print_dmp_and_original_traj(dmp_traj, original_traj):
         print("Length of end effector array original_traj: ", len(original_traj))
         print("original_traj: ", original_traj)
     
+import matplotlib.pyplot as plt
+
+def plot_dmp_comparison(original_pos, spline_pos, dmp_pos, time_original, time_spline, time_dmp, title="Trajectory Comparison"):
+
+    dims = ['X', 'Y', 'Z']
+    fig, axs = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
+    fig.suptitle(title)
+
+    for i in range(3):
+        axs[i].plot(time_original, original_pos[:, i], label="Original", linestyle='--')
+        axs[i].plot(time_spline, spline_pos[:, i], label="Spline", linestyle='-.')
+        axs[i].plot(time_dmp, dmp_pos[:, i], label="DMP", linestyle='-')
+        axs[i].set_ylabel(f"{dims[i]} Position")
+        axs[i].legend(loc="best")
+        axs[i].grid(True)
+
+    axs[2].set_xlabel("Normalized Time")
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    plt.show()
+
 
 def generate_DMP_trajectories(hdf5_files, fixed_timestep_count):
     all_dmp_models = []  
@@ -104,33 +124,45 @@ def generate_DMP_trajectories(hdf5_files, fixed_timestep_count):
 
         original_timesteps = ee_pos.shape[0]
         original_time = np.linspace(0, 1, original_timesteps)  # Normalize time
-        new_time = np.linspace(0, 1, fixed_timestep_count)  # Resample target
+
+        if file_info["type"] == "pick":
+            new_time = np.linspace(0, 1, fixed_timestep_count)  # Resample target
+        else:
+            new_time = np.linspace(0, 1, fixed_timestep_count)
 
         # Interpolate each dimension (X, Y, Z)
         ee_pos_resampled = np.zeros((fixed_timestep_count, 3))
 
-        spline_value = 0.01 if file_info["type"] == "pick" else 0.01
+        spline_value = 0.01 if file_info["type"] == "pick" else 0.01/2
     
         for dim in range(3):
     
             spline = UnivariateSpline(original_time, ee_pos[:, dim], s=spline_value)
             ee_pos_resampled[:, dim] = spline(new_time) 
 
-        view_original_and_spline_trajectory(original_time, new_time, ee_pos, ee_pos_resampled)
+        # view_original_and_spline_trajectory(original_time, new_time, ee_pos, ee_pos_resampled)
 
-        dt = 1.0 / fixed_timestep_count
-        execution_time = fixed_timestep_count * dt
+        start_time = new_time[0]
+        end_time = new_time[-1]
+        exec_time = end_time - start_time
+        dt = exec_time / fixed_timestep_count
         
-        # DMP training on resampled data
+        if file_info["type"] == "pick":
+            exec_time = 1
+        else:
+            exec_time = 1
+
         dmp = DMP(
             n_dims=3,
-            execution_time=execution_time,
+            execution_time=exec_time,
             dt=dt, 
-            n_weights_per_dim=50,
+            n_weights_per_dim=100,
             int_dt=0.0001,
             alpha_y=np.array([25.0, 25.0, 25.0]),
             beta_y=np.array([6.25, 6.25, 6.25]),
         )
+        # configure start and end
+        dmp.configure(start_y=ee_pos_resampled[0], goal_y=ee_pos_resampled[-1])
 
         dmp.imitate(new_time, ee_pos_resampled)
         T_gen, generated_pos = dmp.open_loop()
@@ -140,6 +172,17 @@ def generate_DMP_trajectories(hdf5_files, fixed_timestep_count):
         all_spline_trajectories.append((new_time, ee_pos_resampled))
         all_original_demo_eff_pos.append(ee_pos)
         all_trajectory_types.append(file_info["type"])
-        # view_original_and_spline_trajectory(original_time, new_time, ee_pos, ee_pos_resampled) 
+        # view_original_and_spline_trajectory(original_time, new_time, ee_pos, ee_pos_resampled)
 
+        plot_dmp_comparison(
+            original_pos=ee_pos,
+            spline_pos=ee_pos_resampled,
+            dmp_pos=generated_pos,
+            time_original=original_time,
+            time_spline=new_time,
+            time_dmp=T_gen,
+            title=f"Trajectory Comparison - {file_info['type'].capitalize()}"
+        )
+
+        
     return all_dmp_models, all_generated_trajectories, all_spline_trajectories, all_original_demo_eff_pos, all_trajectory_types

@@ -53,6 +53,19 @@ def parse_planner_actions(filepath):
 
     return planner_actions
 
+def reduce_nut_weights_in_env(env, scale_factor=0.25):
+    
+    nut_bodies = ["SquareNut_main", "RoundNut1_main", "RoundNut2_main"]
+    
+    for body in nut_bodies:
+        body_id = env.sim.model.body_name2id(body)
+        old_mass = env.sim.model.body_mass[body_id]
+        new_mass = old_mass * scale_factor
+        env.sim.model.body_mass[body_id] = new_mass
+        print(f"Mass for {body} changed from {old_mass:.4f} to {new_mass:.4f}")
+
+    env.sim.forward()
+
 
 
 def rotate_three_nuts_in_env(env, angle_degrees=180, axis="z"):
@@ -140,6 +153,7 @@ def create_env(env_name):
         has_offscreen_renderer=False,
         render_camera="agentview",
         use_camera_obs=False,
+        ignore_done=True,
         reward_shaping=True,
         control_freq=1,
     )
@@ -148,6 +162,7 @@ def create_env(env_name):
     env.reset()
 
     rotate_three_nuts_in_env(env, angle_degrees=180, axis="z")
+    # reduce_nut_weights_in_env(env)
     # move_nuts_between_eef_and_pegs(env)
     # move_nuts_with_random_y_safe(env)
     # make_nuts_massless(env)
@@ -175,10 +190,8 @@ def run_pick_dmp(env, dmp_model, spline_traj, goal_pos):
 
     # Generate new trajectory using the trained DMP model
     T_gen, dmp_trajectory = dmp_model.open_loop()
-    # print("Last point of DMP trajectory: ", dmp_trajectory[-1])
-    # print("Actual Goal pos: ", goal_pos)
     all_generated_traj = [(T_gen, dmp_trajectory)]
-    plot_spline_and_DMP_generated_trajectories_3D([spline_traj], all_generated_traj)
+    # plot_spline_and_DMP_generated_trajectories_3D([spline_traj], all_generated_traj)
 
     # Playback in simulation
     grasp = np.array([-1], dtype=np.float32)  # Gripper open
@@ -192,22 +205,27 @@ def run_pick_dmp(env, dmp_model, spline_traj, goal_pos):
         action = np.concatenate([dpos, drot, grasp])
 
         env.step(action)
-    #     env.render()
     
+    for i in range(10):
+        current = get_eff_pos(env)
+        dpos = pos - current
+        drot = np.zeros(3)
+        action = np.concatenate([dpos, drot, grasp])
+        env.step(action)
             
-
 def run_place_dmp(env, dmp_model, spline_traj, goal_pos):
     # Set the goal in DMP model
     dmp_model.goal_y = goal_pos
 
     # Generate new trajectory
     T_gen, dmp_trajectory = dmp_model.open_loop()
+    dmp_trajectory = np.round(dmp_trajectory, 2)
 
     all_generated_traj = [(T_gen, dmp_trajectory)]
     print("Last point of DMP trajectory: ", dmp_trajectory[-1])
     print("Actual Goal pos: ", goal_pos)
 
-    plot_spline_and_DMP_generated_trajectories_3D([spline_traj], all_generated_traj)
+    # plot_spline_and_DMP_generated_trajectories_3D([spline_traj], all_generated_traj)
 
     # Keeping gripper closed throughout place motion
     grasp = np.array([1.0], dtype=np.float32)
@@ -223,7 +241,6 @@ def run_place_dmp(env, dmp_model, spline_traj, goal_pos):
         action = np.concatenate([dpos, drot, grasp])
         env.step(action)
         env.render()
-        # time.sleep(0.005)
 
 
 
