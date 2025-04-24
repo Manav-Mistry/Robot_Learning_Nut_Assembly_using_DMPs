@@ -1,15 +1,11 @@
 import numpy as np
 import robosuite as suite
-from robosuite import load_composite_controller_config 
+from reproduce_helper import *
 
-controller_config = load_composite_controller_config(robot="Kinova3")
-
-# create environment instance
 env = suite.make(
-    env_name="NutAssembly",
+    env_name="NutAssemblyThreeNuts",
     # ThreeNutAssembly
     robots="Kinova3",
-    controller_configs=controller_config,
     has_renderer=True,
     renderer="mjviewer",
     has_offscreen_renderer=False,
@@ -20,10 +16,12 @@ env = suite.make(
     control_freq=20,
 )
 
-# reset the environment
 env.reset()
+rotate_three_nuts_in_env(env)
+# move_three_nuts_with_random_y_safe(env)
 
-for i in range(100):
+
+for i in range(500):
     action = np.random.randn(*env.action_spec[0].shape) * 0.1
     obs, reward, done, info = env.step(action)  # take action in the environment
 

@@ -1,0 +1,6 @@
+(pick robot1 hexnut1)
+(place robot1 hexnut1 round)
+(pick robot1 squarenut)
+(place robot1 squarenut square)
+(pick robot1 hexnut2)
+(place robot1 hexnut2 round)

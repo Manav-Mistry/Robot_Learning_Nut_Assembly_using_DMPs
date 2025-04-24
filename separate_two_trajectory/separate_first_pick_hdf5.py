@@ -2,11 +2,11 @@ import h5py
 import os
 
 # Input and output file paths
-input_file = r"C:\Users\Admin\robosuite_demos\revised_full_demo\demo.hdf5"
-output_file = r"C:\Users\Admin\robosuite_demos\splitted_traj_for_revised_demo\demo_split_pick.hdf5"
+input_file = r"C:\Users\Admin\robosuite_demos\new_full_demo_2\demo.hdf5"
+output_file = r"C:\Users\Admin\robosuite_demos\splitted_traj_for_new_demo_2\demo_split_pick.hdf5"
 
 # Cutoff timestep (inclusive)
-split_timestep = 534
+split_timestep = 229
 
 with h5py.File(input_file, 'r') as f_in, h5py.File(output_file, 'w') as f_out:
     # Copy top-level 'data' group and its attributes

@@ -2,7 +2,7 @@ import h5py
 import numpy as np
 
 # Load your demonstration file
-hdf5_path = r"C:\Users\Admin\robosuite_demos\revised_full_demo\demo.hdf5"  # Change this to your actual file path
+hdf5_path = r"C:\Users\Admin\robosuite_demos\new_full_demo_2\demo.hdf5"  # Change this to your actual file path
 
 with h5py.File(hdf5_path, "r") as f:
     # List available episodes

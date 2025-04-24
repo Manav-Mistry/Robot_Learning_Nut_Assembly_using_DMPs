@@ -1,12 +1,12 @@
 import h5py
 
 # Input and output file paths
-input_file = r"C:\Users\Admin\robosuite_demos\revised_full_demo\demo.hdf5"
-output_file = r"C:\Users\Admin\robosuite_demos\splitted_traj_for_revised_demo\demo_split_place.hdf5"
+input_file = r"C:\Users\Admin\robosuite_demos\new_full_demo_2\demo.hdf5"
+output_file = r"C:\Users\Admin\robosuite_demos\splitted_traj_for_new_demo_2\demo_split_place.hdf5"
 
 # Time step range (inclusive)
-start_t = 534
-end_t = 1056
+start_t = 229
+end_t = 810
 
 with h5py.File(input_file, 'r') as f_in, h5py.File(output_file, 'w') as f_out:
     # Create top-level group and copy attributes

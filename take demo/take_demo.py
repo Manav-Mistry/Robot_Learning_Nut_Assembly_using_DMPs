@@ -29,7 +29,8 @@ def check_pygame_keys():
 pygame.init()
 pygame.display.set_mode((300, 100))
 
-controller_config = load_composite_controller_config(robot="Kinova3")
+controller_config = load_composite_controller_config(controller="BASIC", robot="Kinova3")
+# controller_config['body_parts']['right']['input_type'] = "absolute"
 
 env = suite.make(
     env_name="NutAssembly",
@@ -45,8 +46,6 @@ env = suite.make(
     control_freq=20,
 )
 env = VisualizationWrapper(env)
-
-
 
 controller = Keyboard(env=env)
 controller.start_control()
