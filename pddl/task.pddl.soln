@@ -1,4 +1,0 @@
-(pick robot1 squarenut)
-(place_on_peg_square robot1 squarenut peg1)
-(pick robot1 hexnut)
-(place_on_peg_hex robot1 hexnut peg2)
